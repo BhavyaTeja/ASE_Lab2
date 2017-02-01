@@ -1,0 +1,151 @@
+<! DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Directions</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js" type="application/javascript"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBUnppqHOWgbDf82yVzP2hK89O3EfbNWmk&v=3.exp&sensor=true"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    
+
+    <style>
+    #map {
+    width: 650px;
+    height: 550px;
+        border-radius: 8px;
+}
+    </style>
+    <nav class="navbar navbar-default" style="align-content: center; text-align-all: center;">
+<div class="container-fluid" style="align-content: center; text-align-all: center;", align="center">
+   <div class="navbar-header">
+       <a  class="navbar-brand" href="User_Page.html"><font color="black"><big>Profile</big></font></a>
+ </div>
+     <ul class="nav nav-tabs nav-justified" style="align-content: center; text-align-all: center;">
+         <li><a href="Google_Maps.html"><font color="#191970"><br><big><b>GET LOCATION</b></big><br/></font></a></li>
+         <li><a href="Weather.html"><font color="#191970"><br><big><b>CHECK WEATHER</b></big><br/></font></a></li>
+         <li><a href="Login_Page.html"><font color="#191970"><br><big><b>LOGOUT</b></big><br/></font></a></li>
+     </ul>
+   </div>
+ </nav>
+    </head>
+    <body>
+    <div ng-app="directions" class="map" ng-controller="getdirection" align="center">
+        <form class = "navbar-form" align = "center">
+        <div class="row" align="center">
+                    <div class="input-group">
+                <span class="input-group-addon" id="basic-addon1">Source</span>
+                <input type="text" ng-model = "startlocation" ng-class="controls" id = "origin-input" class="form-control" placeholder="Example: Kansas City" aria-describedby="basic-addon1">
+            </div>
+            <br/><br/>
+            <div class="input-group">
+                <span class="input-group-addon" id="basic-addon2">Destination</span>
+                <input type="text" ng-model = "endlocation" ng-class="controls" id = "destination-input" class="form-control" placeholder="Example: Dallas" aria-describedby="basic-addon2">
+            </div>
+            <br/><br/>
+<input align="center" type="button" value="Submit" class="btn btn-success" ng-click="routes()" id="changemode-driving"><br/>
+        </div>
+        </form>
+        <div id="map" align="center"></div>
+        </div>
+    </body>
+</html>
+<script>
+    // This example requires the Places library. Include the libraries=places
+    // parameter when you first load the API. For example:
+    // <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
+
+    function initMap() {
+        var map = new google.maps.Map(document.getElementById('map'), {
+            mapTypeControl: false,
+            center: {lat: -33.8688, lng: 151.2195},
+            zoom: 13
+        });
+
+        new AutocompleteDirectionsHandler(map);
+    }
+
+    function AutocompleteDirectionsHandler(map) {
+        this.map = map;
+        this.originPlaceId = null;
+        this.destinationPlaceId = null;
+        this.travelMode = 'WALKING';
+        var originInput = document.getElementById('origin-input');
+        var destinationInput = document.getElementById('destination-input');
+        var modeSelector = document.getElementById('mode-selector');
+        this.directionsService = new google.maps.DirectionsService;
+        this.directionsDisplay = new google.maps.DirectionsRenderer;
+        this.directionsDisplay.setMap(map);
+
+        var originAutocomplete = new google.maps.places.Autocomplete(
+            originInput, {placeIdOnly: true});
+        var destinationAutocomplete = new google.maps.places.Autocomplete(
+            destinationInput, {placeIdOnly: true});
+
+        this.setupClickListener('changemode-walking', 'WALKING');
+        this.setupClickListener('changemode-transit', 'TRANSIT');
+        this.setupClickListener('changemode-driving', 'DRIVING');
+
+        this.setupPlaceChangedListener(originAutocomplete, 'ORIG');
+        this.setupPlaceChangedListener(destinationAutocomplete, 'DEST');
+
+        this.map.controls[google.maps.ControlPosition.TOP_LEFT].push(originInput);
+        this.map.controls[google.maps.ControlPosition.TOP_LEFT].push(destinationInput);
+        this.map.controls[google.maps.ControlPosition.TOP_LEFT].push(modeSelector);
+    }
+
+    // Sets a listener on a radio button to change the filter type on Places
+    // Autocomplete.
+    AutocompleteDirectionsHandler.prototype.setupClickListener = function(id, mode) {
+        var radioButton = document.getElementById(id);
+        var me = this;
+        radioButton.addEventListener('click', function() {
+            me.travelMode = mode;
+            me.route();
+        });
+    };
+
+    AutocompleteDirectionsHandler.prototype.setupPlaceChangedListener = function(autocomplete, mode) {
+        var me = this;
+        autocomplete.bindTo('bounds', this.map);
+        autocomplete.addListener('place_changed', function() {
+            var place = autocomplete.getPlace();
+            if (!place.place_id) {
+                window.alert("Please select an option from the dropdown list.");
+                return;
+            }
+            if (mode === 'ORIG') {
+                me.originPlaceId = place.place_id;
+            } else {
+                me.destinationPlaceId = place.place_id;
+            }
+            me.route();
+        });
+
+    };
+
+    AutocompleteDirectionsHandler.prototype.route = function() {
+        if (!this.originPlaceId || !this.destinationPlaceId) {
+            return;
+        }
+        var me = this;
+
+        this.directionsService.route({
+            origin: {'placeId': this.originPlaceId},
+            destination: {'placeId': this.destinationPlaceId},
+            travelMode: this.travelMode
+        }, function(response, status) {
+            if (status === 'OK') {
+                me.directionsDisplay.setDirections(response);
+            } else {
+                window.alert('Directions request failed due to ' + status);
+            }
+        });
+    };
+
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAD95SdURNu0_qEhv7_0OQCRQO-_lW0JH8&libraries=places&callback=initMap"
+        async defer></script>
